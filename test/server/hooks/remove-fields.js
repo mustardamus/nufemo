@@ -2,7 +2,7 @@
 
 const _ = global._ = require('lodash')
 const chai = require('chai')
-const hook = require('../../../server/hooks/removeFields')
+const hook = require('../../../server/hooks/remove-fields')
 
 const assert = chai.assert
 

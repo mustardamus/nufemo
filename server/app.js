@@ -34,6 +34,7 @@ ekso({
   rootDir: __dirname,
   global: true,
   pathTransforms: ['capitalize'],
+  nameTransforms: ['camelCase'],
   globalRequire: {
     _: 'lodash'
   }
