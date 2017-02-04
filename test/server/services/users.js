@@ -11,6 +11,8 @@ const assert = chai.assert
 const userRolesDefault = process.env.USER_ROLES_DEFAULT.split(',')
 const superAdminRole = process.env.SUPER_ADMIN_ROLE
 const superAdminUsernames = process.env.SUPER_ADMIN_USERNAMES.split(',')
+const localEndpoint = process.env.LOCAL_SERVICE_ENDPOINT
+const tokenEndpoint = process.env.TOKEN_SERVICE_ENDPOINT
 
 const user1 = { username: 'u1', email: 'u1@test.com', password: '12345678' }
 const user2 = { username: 'u2', email: 'u2@test.com', password: '12345678' }
@@ -103,6 +105,50 @@ describe('User Service', () => {
 
       assert.isOk(res)
       assert.deepEqual(res.roles, roles)
+    })
+  })
+
+  it('should fail logging in a user with wrong password', () => {
+    return chai.request(app)
+    .post(localEndpoint)
+    .set('Accept', 'application/json')
+    .send({ username: user1.username, password: 'wrong' })
+    .catch(err => assert.isOk(err))
+  })
+
+  it('should fail logging in a user with a wrong token', () => {
+    return chai.request(app)
+    .post(tokenEndpoint)
+    .set('Accept', 'application/json')
+    .send({ token: 'wrong' })
+    .catch(err => assert.isOk(err))
+  })
+
+  it('should succeed logging in a user with correct password', () => {
+    // note that user1.password will be set to the hashed password when creating
+    // the user
+    return chai.request(app)
+    .post(localEndpoint)
+    .set('Accept', 'application/json')
+    .send({ username: user1.username, password: '12345678' })
+    .then(res => {
+      assert.isOk(res.body)
+      assert.isOk(res.body.token)
+      assert.equal(res.body.data.username, user1.username)
+
+      this.tokenUser1 = res.body.token
+    })
+  })
+
+  it('should succeed logging in a user with a token', () => {
+    return chai.request(app)
+    .post(tokenEndpoint)
+    .set('Accept', 'application/json')
+    .send({ token: this.tokenUser1 })
+    .then(res => {
+      assert.isOk(res.body)
+      assert.equal(res.body.token, this.tokenUser1)
+      assert.equal(res.body.data.username, user1.username)
     })
   })
 })
