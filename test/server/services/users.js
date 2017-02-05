@@ -13,6 +13,7 @@ const superAdminRole = process.env.SUPER_ADMIN_ROLE
 const superAdminUsernames = process.env.SUPER_ADMIN_USERNAMES.split(',')
 const localEndpoint = process.env.LOCAL_SERVICE_ENDPOINT
 const tokenEndpoint = process.env.TOKEN_SERVICE_ENDPOINT
+const usersEndpoint = `${process.env.API_PREFIX}/users`
 
 const user1 = { username: 'u1', email: 'u1@test.com', password: '12345678' }
 const user2 = { username: 'u2', email: 'u2@test.com', password: '12345678' }
@@ -22,6 +23,8 @@ const superAdmin = {
   email: 'u4@test.com',
   password: '12345678'
 }
+const ids = { user1: null, user2: null, superAdmin: null }
+const tokens = { user1: null, superAdmin: null }
 
 chai.use(chaiHttp)
 
@@ -77,6 +80,8 @@ describe('User Service', () => {
       assert.isOk(res._id)
       assert.equal(res.username, user1.username)
       assert.equal(res.email, user1.email)
+
+      ids.user1 = res._id
     })
   })
 
@@ -84,7 +89,10 @@ describe('User Service', () => {
     return Services.Users.create(user2)
     .then(res => {
       assert.isOk(res)
+      assert.isOk(res._id)
       assert.isNotOk(res.password)
+
+      ids.user2 = res._id
     })
   })
 
@@ -105,6 +113,8 @@ describe('User Service', () => {
 
       assert.isOk(res)
       assert.deepEqual(res.roles, roles)
+
+      ids.superAdmin = res._id
     })
   })
 
@@ -136,7 +146,7 @@ describe('User Service', () => {
       assert.isOk(res.body.token)
       assert.equal(res.body.data.username, user1.username)
 
-      this.tokenUser1 = res.body.token
+      tokens.user1 = res.body.token
     })
   })
 
@@ -144,133 +154,91 @@ describe('User Service', () => {
     return chai.request(app)
     .post(tokenEndpoint)
     .set('Accept', 'application/json')
-    .send({ token: this.tokenUser1 })
+    .send({ token: tokens.user1 })
     .then(res => {
       assert.isOk(res.body)
-      assert.equal(res.body.token, this.tokenUser1)
+      assert.equal(res.body.token, tokens.user1)
       assert.equal(res.body.data.username, user1.username)
     })
   })
-})
 
-/*
-const chai = require('chai');
-const chaiHttp = require('chai-http');
-const assert = require('assert');
-const app = require('../../../src/app');
-const Menu = app.service('menus');
-const User = app.service('users');
-const authentication = require('feathers-authentication/client');
-const bodyParser = require('body-parser');
-var token;
-//config for app to do authentication
-app
-  .use(bodyParser.json())
-  .use(bodyParser.urlencoded({ extended: true }))
-  .configure(authentication());
-//use http plugin
-chai.use(chaiHttp);
-//use should
-var should = chai.should();
+  it('should not allow to find users without logging in', (done) => {
+    chai.request(app)
+    .get(usersEndpoint)
+    .set('Accept', 'application/json')
+    .send().end((err, res) => {
+      assert.isOk(err)
+      assert.deepEqual(res.body, {})
 
-describe('menu service', () => {
-  //setup
-  before((done) => {
-    //start the server
-    this.server = app.listen(3030);
-    //once listening do the following
-    this.server.once('listening', () => {
-      //create some mock menu items
-      Menu.create({
-        name: 'hamburger',
-        price: 7.99,
-        categories: ['lunch', 'burgers', 'dinner']
-      });
-      Menu.create({
-        name: 'spinach omlete',
-        price: 4.99,
-        categories: ['breakfast', 'omlete']
-      });
-      Menu.create({
-        name: 'steak',
-        price: 12.99,
-        categories: ['dinner', 'entree']
-      });
-      Menu.create({
-        name: 'reuben',
-        price: 6.99,
-        categories: ['lunch', 'sandwhich']
-      });
-      Menu.create({
-        name: 'soft drink',
-        price: 1.99,
-        categories: ['drinks', 'soda']
-      });
-      //create mock user
-      User.create({
-         'username': 'resposadmin',
-         'password': 'igzSwi7*Creif4V$',
-         'roles': ['admin']
-      }, () => {
-        //setup a request to get authentication token
-        chai.request(app)
-            //request to /auth/local
-            .post('/auth/local')
-            //set header
-            .set('Accept', 'application/json')
-            //send credentials
-            .send({
-               'username': 'resposadmin',
-               'password': 'igzSwi7*Creif4V$'
-            })
-            //when finished
-            .end((err, res) => {
-              //set token for auth in other requests
-              token = res.body.token;
-              done();
-            });
-      });
+      done()
+    })
+  })
 
-    });
-  });
-  //teardown after tests
-  after((done) => {
-    //delete contents of menu in mongodb
-    Menu.remove(null, () => {
-      User.remove(null, () => {
-        //stop the server
-        this.server.close(function() {});
-        done();
-      });
-    });
+  it('should not be able to find users without a super_admin role', (done) => {
+    chai.request(app)
+    .get(usersEndpoint)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send().end((err, res) => {
+      assert.isOk(err)
+      assert.deepEqual(res.body, {})
 
-  });
-  it('registered the menus service', () => {
-    assert.ok(app.service('menus'));
-  });
-  it('should post the menuitem data', function(done) {
-      //setup a request
+      done()
+    })
+  })
+
+  it('should be able to find users with a super admin role', (done) => {
+    chai.request(app)
+    .post(localEndpoint)
+    .set('Accept', 'application/json')
+    .send({ username: superAdmin.username, password: '12345678' })
+    .then(res => {
+      assert.isOk(res.body)
+      assert.isOk(res.body.token)
+      assert.equal(res.body.data.username, superAdmin.username)
+
+      tokens.superAdmin = res.body.token
+
       chai.request(app)
-          //request to /store
-          .post('/menus')
-          .set('Accept', 'application/json')
-          .set('Authorization', 'Bearer '.concat(token))
-          //attach data to request
-          .send({
-              name: 'shrimp fettuccine',
-              price: 12.99,
-              categories: 'dinner, pasta'
-          })
-          //when finished do the following
-          .end((err, res) => {
-              res.body.should.have.property('name');
-              res.body.name.should.equal('shrimp fettuccine');
-              res.body.should.have.property('price');
-              res.body.price.should.equal(12.99);
-              res.body.categories.should.be.an('array')
-                  .to.include.members(['dinner, pasta']);
-              done();
-          });
-  });
-});
-*/
+      .get(usersEndpoint)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${tokens.superAdmin}`)
+      .send().end((err, res) => {
+        assert.isNotOk(err)
+        assert.isOk(res)
+        assert.lengthOf(res.body.data, 4)
+        assert.equal(res.body.total, '4')
+
+        done()
+      })
+    })
+  })
+
+  it('should not be able to get data of another user', (done) => {
+    chai.request(app)
+    .get(`${usersEndpoint}/${ids.user2}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send().end((err, res) => {
+      assert.isOk(err)
+      assert.deepEqual(res.body, {})
+
+      done()
+    })
+  })
+
+  it('should be able to get data of another user if super admin', (done) => {
+    chai.request(app)
+    .get(`${usersEndpoint}/${ids.user2}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.superAdmin}`)
+    .send().end((err, res) => {
+      assert.isNotOk(err)
+      assert.isOk(res.body)
+      assert.equal(res.body._id, ids.user2)
+      assert.equal(res.body.username, user2.username)
+
+      done()
+    })
+  })
+})

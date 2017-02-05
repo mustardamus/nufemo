@@ -20,8 +20,24 @@ const makeSuperAdmin = (hook) => {
 module.exports = {
   before: {
     all: [],
-    find: [],
-    get: [],
+    find: [
+      Hooks.authentication.verifyToken(),
+      Hooks.authentication.populateUser(),
+      Hooks.authentication.restrictToAuthenticated(),
+      Hooks.authentication.restrictToRoles({
+        roles: [superAdminRole],
+        ownerField: '_id'
+      })
+    ],
+    get: [
+      Hooks.authentication.verifyToken(),
+      Hooks.authentication.populateUser(),
+      Hooks.authentication.restrictToRoles({
+        roles: [superAdminRole],
+        ownerField: '_id',
+        owner: true
+      })
+    ],
     create: [
       Hooks.authentication.hashPassword(),
       makeSuperAdmin

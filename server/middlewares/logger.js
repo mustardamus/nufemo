@@ -6,10 +6,10 @@ module.exports = (app) => {
       const message = `${err.code ? `(${err.code})` : ''} Route: ${req.url} - ${err.message}`
 
       if (err.code === 404) {
-        winston.info(message)
+        // winston.info(message)
       } else {
-        winston.error(message)
-        winston.info(err.stack)
+        // winston.error(message)
+        // winston.info(err.stack)
       }
     }
 
