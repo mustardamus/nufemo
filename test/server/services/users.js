@@ -52,24 +52,63 @@ describe('User Service', () => {
     assert.isOk(Services.Users)
   })
 
-  it('should fail to create a user without username', () => {
-    return Services.Users.create({ password: 'test', email: 'test@test.com' })
+  it('should fail to create a user without username', (done) => {
+    Services.Users.create({ password: '12345678', email: 'test@test.com' })
     .catch(err => {
       assert.isOk(err)
+      done()
     })
   })
 
-  it('should fail to create a user without a password', () => {
-    return Services.Users.create({ username: 'test', email: 'test@test.com' })
+  it('should fail to create a user without a password', (done) => {
+    Services.Users.create({ username: 'test', email: 'test@test.com' })
     .catch(err => {
       assert.isOk(err)
+      done()
     })
   })
 
-  it('should fail to create a user without a email', () => {
-    return Services.Users.create({ username: 'test', password: 'test' })
+  it('should fail to create a user without a email', (done) => {
+    Services.Users.create({ username: 'test', password: '12345678' })
     .catch(err => {
       assert.isOk(err)
+      done()
+    })
+  })
+
+  it('should fail to create a user with a non-aphanum username', (done) => {
+    Services.Users.create({
+      username: '$som e',
+      email: 'test@test.com',
+      password: '12345678'
+    })
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
+  })
+
+  it('should fail to create a user with a short password', (done) => {
+    Services.Users.create({
+      username: 'test',
+      email: 'test@test.com',
+      password: '1'
+    })
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
+  })
+
+  it('should fail to create a user with a invalid e-mail address', (done) => {
+    Services.Users.create({
+      username: 'test',
+      email: 'not so valid',
+      password: '12345678'
+    })
+    .catch(err => {
+      assert.isOk(err)
+      done()
     })
   })
 
@@ -237,6 +276,20 @@ describe('User Service', () => {
       assert.isOk(res.body)
       assert.equal(res.body._id, ids.user2)
       assert.equal(res.body.username, user2.username)
+
+      done()
+    })
+  })
+
+  it('should be able to get data of own user', (done) => {
+    chai.request(app)
+    .get(`${usersEndpoint}/${ids.user1}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send().end((err, res) => {
+      assert.isNotOk(err)
+      assert.equal(res.body._id, ids.user1)
+      assert.equal(res.body.username, user1.username)
 
       done()
     })

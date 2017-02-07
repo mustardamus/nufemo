@@ -1,4 +1,4 @@
-/* global Hooks */
+/* global Hooks, Joi */
 
 require('dotenv').load()
 
@@ -39,6 +39,11 @@ module.exports = {
       })
     ],
     create: [
+      Hooks.joi({
+        username: Joi.string().trim().alphanum().required(),
+        password: Joi.string().trim().min(8).required(),
+        email: Joi.string().trim().email().required()
+      }),
       Hooks.authentication.hashPassword(),
       makeSuperAdmin
     ],

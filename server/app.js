@@ -36,7 +36,8 @@ ekso({
   pathTransforms: ['capitalize'],
   nameTransforms: ['camelCase'],
   globalRequire: {
-    _: 'lodash'
+    _: 'lodash',
+    Joi: 'joi'
   }
 }, [
   'helpers',
