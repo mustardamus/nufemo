@@ -44,7 +44,7 @@ module.exports = {
     ],
     update: [].concat(ownerAndSuperAdmin),
     patch: [].concat(ownerAndSuperAdmin),
-    remove: []
+    remove: [].concat(ownerAndSuperAdmin)
   },
 
   after: {

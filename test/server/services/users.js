@@ -400,5 +400,60 @@ describe('User Service', () => {
     })
   })
 
-  it('should not be able to delete another user')
+  it('should not be able to delete another user', done => {
+    chai.request(app)
+    .delete(`${usersEndpoint}/${ids.user2}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send().end((err, res) => {
+      assert.isOk(err)
+      assert.deepEqual(res.body, {})
+
+      done()
+    })
+  })
+
+  it('should be able to delete another user if super admin', done => {
+    chai.request(app)
+    .delete(`${usersEndpoint}/${ids.user3}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.superAdmin}`)
+    .send().end((err, res) => {
+      assert.isNotOk(err)
+      assert.equal(res.body.username, user3.username)
+
+      chai.request(app)
+      .get(usersEndpoint)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${tokens.superAdmin}`)
+      .send().end((err, res) => {
+        assert.isNotOk(err)
+        assert.lengthOf(res.body.data, 3)
+
+        done()
+      })
+    })
+  })
+
+  it('should be able to delete own user', done => {
+    chai.request(app)
+    .delete(`${usersEndpoint}/${ids.user1}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send().end((err, res) => {
+      assert.isNotOk(err)
+      assert.equal(res.body.username, user1.username)
+
+      chai.request(app)
+      .get(usersEndpoint)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${tokens.superAdmin}`)
+      .send().end((err, res) => {
+        assert.isNotOk(err)
+        assert.lengthOf(res.body.data, 2)
+
+        done()
+      })
+    })
+  })
 })
