@@ -24,7 +24,7 @@ describe('removeFields before hook', () => {
     assert.isOk(hook({})({}) instanceof Promise)
   })
 
-  it('should validate hook.data with a schema', () => {
+  it('should validate hook.data with a schema', done => {
     const hookObj = {
       data: {
         username: 'test',
@@ -32,14 +32,16 @@ describe('removeFields before hook', () => {
       }
     }
 
-    return hook(schema)(hookObj)
+    hook(schema)(hookObj)
     .then(hook => {
       assert.isOk(hook)
       assert.deepEqual(hookObj.data, hook.data)
+
+      done()
     })
   })
 
-  it('should invalidate hook.data with a schema, abort on first error', () => {
+  it('should invalidate hook.data with a schema, abort on first error', done => {
     const hookObj = {
       data: {
         username: 'test non alpha $num',
@@ -47,7 +49,10 @@ describe('removeFields before hook', () => {
       }
     }
 
-    return hook(schema)(hookObj)
-    .catch(err => assert.isOk(err))
+    hook(schema)(hookObj)
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
   })
 })
