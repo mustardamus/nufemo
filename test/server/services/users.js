@@ -125,8 +125,29 @@ describe('User Service', () => {
     })
   })
 
-  it('should fails creating a user with same username')
-  it('should fails creating a user with same email')
+  it('should fails creating a user with same username', done => {
+    Services.Users.create({
+      username: user1,
+      email: 'another@mail.com',
+      password: '12345678'
+    })
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
+  })
+
+  it('should fails creating a user with same email', done => {
+    Services.Users.create({
+      username: 'another',
+      email: user1.email,
+      password: '12345678'
+    })
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
+  })
 
   it('should not return the hashed password on creating a new user', done => {
     Services.Users.create(user2)
