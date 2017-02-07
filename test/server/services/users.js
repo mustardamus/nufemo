@@ -112,8 +112,8 @@ describe('User Service', () => {
     })
   })
 
-  it('should successfully create a new user', () => {
-    return Services.Users.create(user1)
+  it('should successfully create a new user', done => {
+    Services.Users.create(user1)
     .then(res => {
       assert.isOk(res)
       assert.isOk(res._id)
@@ -121,33 +121,39 @@ describe('User Service', () => {
       assert.equal(res.email, user1.email)
 
       ids.user1 = res._id
+      done()
     })
   })
 
-  it('should not return the hashed password on creating a new user', () => {
-    return Services.Users.create(user2)
+  it('should fails creating a user with same username')
+  it('should fails creating a user with same email')
+
+  it('should not return the hashed password on creating a new user', done => {
+    Services.Users.create(user2)
     .then(res => {
       assert.isOk(res)
       assert.isOk(res._id)
       assert.isNotOk(res.password)
 
       ids.user2 = res._id
+      done()
     })
   })
 
-  it('should set the default roles to a user', () => {
-    return Services.Users.create(user3)
+  it('should set the default roles to a user', done => {
+    Services.Users.create(user3)
     .then(res => {
       assert.isOk(res)
       assert.isArray(res.roles)
       assert.deepEqual(res.roles, userRolesDefault)
 
       ids.user3 = res._id
+      done()
     })
   })
 
-  it('should add the super-admin role on matching usernames', () => {
-    return Services.Users.create(superAdmin)
+  it('should add the super-admin role on matching usernames', done => {
+    Services.Users.create(superAdmin)
     .then(res => {
       const roles = userRolesDefault
       roles.push(superAdminRole)
@@ -156,29 +162,36 @@ describe('User Service', () => {
       assert.deepEqual(res.roles, roles)
 
       ids.superAdmin = res._id
+      done()
     })
   })
 
-  it('should fail logging in a user with wrong password', () => {
-    return chai.request(app)
+  it('should fail logging in a user with wrong password', done => {
+    chai.request(app)
     .post(localEndpoint)
     .set('Accept', 'application/json')
     .send({ username: user1.username, password: 'wrong' })
-    .catch(err => assert.isOk(err))
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
   })
 
-  it('should fail logging in a user with a wrong token', () => {
-    return chai.request(app)
+  it('should fail logging in a user with a wrong token', done => {
+    chai.request(app)
     .post(tokenEndpoint)
     .set('Accept', 'application/json')
     .send({ token: 'wrong' })
-    .catch(err => assert.isOk(err))
+    .catch(err => {
+      assert.isOk(err)
+      done()
+    })
   })
 
-  it('should succeed logging in a user with correct password', () => {
+  it('should succeed logging in a user with correct password', done => {
     // note that user1.password will be set to the hashed password when creating
     // the user
-    return chai.request(app)
+    chai.request(app)
     .post(localEndpoint)
     .set('Accept', 'application/json')
     .send({ username: user1.username, password: '12345678' })
@@ -188,11 +201,12 @@ describe('User Service', () => {
       assert.equal(res.body.data.username, user1.username)
 
       tokens.user1 = res.body.token
+      done()
     })
   })
 
-  it('should succeed logging in a user with a token', () => {
-    return chai.request(app)
+  it('should succeed logging in a user with a token', done => {
+    chai.request(app)
     .post(tokenEndpoint)
     .set('Accept', 'application/json')
     .send({ token: tokens.user1 })
@@ -200,6 +214,8 @@ describe('User Service', () => {
       assert.isOk(res.body)
       assert.equal(res.body.token, tokens.user1)
       assert.equal(res.body.data.username, user1.username)
+
+      done()
     })
   })
 

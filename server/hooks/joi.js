@@ -1,7 +1,7 @@
 const Joi = require('joi')
 
-module.exports = (fields) => {
-  return (hook) => {
+module.exports = fields => {
+  return hook => {
     return new Promise((resolve, reject) => {
       const opt = { abortEarly: true }
       const schema = Joi.object().keys(fields)
