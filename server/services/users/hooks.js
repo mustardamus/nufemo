@@ -17,27 +17,22 @@ const makeSuperAdmin = (hook) => {
   })
 }
 
+const ownerAndSuperAdmin = [
+  Hooks.authentication.verifyToken(),
+  Hooks.authentication.populateUser(),
+  Hooks.authentication.restrictToAuthenticated(),
+  Hooks.authentication.restrictToRoles({
+    roles: [superAdminRole],
+    ownerField: '_id',
+    owner: true
+  })
+]
+
 module.exports = {
   before: {
     all: [],
-    find: [
-      Hooks.authentication.verifyToken(),
-      Hooks.authentication.populateUser(),
-      Hooks.authentication.restrictToAuthenticated(),
-      Hooks.authentication.restrictToRoles({
-        roles: [superAdminRole],
-        ownerField: '_id'
-      })
-    ],
-    get: [
-      Hooks.authentication.verifyToken(),
-      Hooks.authentication.populateUser(),
-      Hooks.authentication.restrictToRoles({
-        roles: [superAdminRole],
-        ownerField: '_id',
-        owner: true
-      })
-    ],
+    find: [].concat(ownerAndSuperAdmin),
+    get: [].concat(ownerAndSuperAdmin),
     create: [
       Hooks.joi({
         username: Joi.string().trim().alphanum().required(),
@@ -47,8 +42,8 @@ module.exports = {
       Hooks.authentication.hashPassword(),
       makeSuperAdmin
     ],
-    update: [],
-    patch: [],
+    update: [].concat(ownerAndSuperAdmin),
+    patch: [].concat(ownerAndSuperAdmin),
     remove: []
   },
 

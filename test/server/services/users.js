@@ -23,7 +23,7 @@ const superAdmin = {
   email: 'u4@test.com',
   password: '12345678'
 }
-const ids = { user1: null, user2: null, superAdmin: null }
+const ids = { user1: null, user2: null, user3: null, superAdmin: null }
 const tokens = { user1: null, superAdmin: null }
 
 chai.use(chaiHttp)
@@ -52,7 +52,7 @@ describe('User Service', () => {
     assert.isOk(Services.Users)
   })
 
-  it('should fail to create a user without username', (done) => {
+  it('should fail to create a user without username', done => {
     Services.Users.create({ password: '12345678', email: 'test@test.com' })
     .catch(err => {
       assert.isOk(err)
@@ -60,7 +60,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should fail to create a user without a password', (done) => {
+  it('should fail to create a user without a password', done => {
     Services.Users.create({ username: 'test', email: 'test@test.com' })
     .catch(err => {
       assert.isOk(err)
@@ -68,7 +68,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should fail to create a user without a email', (done) => {
+  it('should fail to create a user without a email', done => {
     Services.Users.create({ username: 'test', password: '12345678' })
     .catch(err => {
       assert.isOk(err)
@@ -76,7 +76,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should fail to create a user with a non-aphanum username', (done) => {
+  it('should fail to create a user with a non-aphanum username', done => {
     Services.Users.create({
       username: '$som e',
       email: 'test@test.com',
@@ -88,7 +88,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should fail to create a user with a short password', (done) => {
+  it('should fail to create a user with a short password', done => {
     Services.Users.create({
       username: 'test',
       email: 'test@test.com',
@@ -100,7 +100,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should fail to create a user with a invalid e-mail address', (done) => {
+  it('should fail to create a user with a invalid e-mail address', done => {
     Services.Users.create({
       username: 'test',
       email: 'not so valid',
@@ -141,6 +141,8 @@ describe('User Service', () => {
       assert.isOk(res)
       assert.isArray(res.roles)
       assert.deepEqual(res.roles, userRolesDefault)
+
+      ids.user3 = res._id
     })
   })
 
@@ -201,7 +203,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should not allow to find users without logging in', (done) => {
+  it('should not allow to find users without logging in', done => {
     chai.request(app)
     .get(usersEndpoint)
     .set('Accept', 'application/json')
@@ -213,7 +215,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should not be able to find users without a super_admin role', (done) => {
+  it('should not be able to find users without a super_admin role', done => {
     chai.request(app)
     .get(usersEndpoint)
     .set('Accept', 'application/json')
@@ -226,7 +228,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should be able to find users with a super admin role', (done) => {
+  it('should be able to find users with a super admin role', done => {
     chai.request(app)
     .post(localEndpoint)
     .set('Accept', 'application/json')
@@ -253,7 +255,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should not be able to get data of another user', (done) => {
+  it('should not be able to get data of another user', done => {
     chai.request(app)
     .get(`${usersEndpoint}/${ids.user2}`)
     .set('Accept', 'application/json')
@@ -266,7 +268,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should be able to get data of another user if super admin', (done) => {
+  it('should be able to get data of another user if super admin', done => {
     chai.request(app)
     .get(`${usersEndpoint}/${ids.user2}`)
     .set('Accept', 'application/json')
@@ -281,7 +283,7 @@ describe('User Service', () => {
     })
   })
 
-  it('should be able to get data of own user', (done) => {
+  it('should be able to get data of own user', done => {
     chai.request(app)
     .get(`${usersEndpoint}/${ids.user1}`)
     .set('Accept', 'application/json')
@@ -294,4 +296,72 @@ describe('User Service', () => {
       done()
     })
   })
+
+  it('should not be able to update data of another user', done => {
+    chai.request(app)
+    .put(`${usersEndpoint}/${ids.user2}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send(user2).end((err, res) => {
+      assert.isOk(err)
+      assert.deepEqual(res.body, {})
+
+      chai.request(app)
+      .patch(`${usersEndpoint}/${ids.user2}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${tokens.user1}`)
+      .send({ email: 'some@other.com' }).end((err, res) => {
+        assert.isOk(err)
+        assert.deepEqual(res.body, {})
+
+        done()
+      })
+    })
+  })
+
+  it('should be able to update data of own user', done => {
+    chai.request(app)
+    .put(`${usersEndpoint}/${ids.user1}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.user1}`)
+    .send(user1).end((err, res) => {
+      assert.isNotOk(err)
+      assert.equal(res.body.email, user1.email)
+
+      chai.request(app)
+      .patch(`${usersEndpoint}/${ids.user1}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${tokens.user1}`)
+      .send({ email: user1.email }).end((err, res) => {
+        assert.isNotOk(err)
+        assert.equal(res.body.email, user1.email)
+
+        done()
+      })
+    })
+  })
+
+  it('should be able to update data of another user as super admin', done => {
+    chai.request(app)
+    .put(`${usersEndpoint}/${ids.user2}`)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ${tokens.superAdmin}`)
+    .send(user2).end((err, res) => {
+      assert.isNotOk(err)
+      assert.equal(res.body.email, user2.email)
+
+      chai.request(app)
+      .patch(`${usersEndpoint}/${ids.user3}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${tokens.superAdmin}`)
+      .send({ email: user3.email }).end((err, res) => {
+        assert.isNotOk(err)
+        assert.equal(res.body.email, user3.email)
+
+        done()
+      })
+    })
+  })
+
+  it('should not be able to delete another user')
 })
