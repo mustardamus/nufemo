@@ -28,7 +28,7 @@ const tokens = { user1: null, superAdmin: null }
 
 chai.use(chaiHttp)
 
-describe('User Service', () => {
+describe('User Service - Server', () => {
   before(done => {
     this.server = app.listen(process.env.TEST_PORT)
 
